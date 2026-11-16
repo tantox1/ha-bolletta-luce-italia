@@ -4,6 +4,13 @@ Tutte le modifiche rilevanti di Bolletta Luce Italia sono documentate in questo 
 
 Il progetto usa il versionamento semantico e i tag nel formato `vMAJOR.MINOR.PATCH`.
 
+## [0.4.2] - 2026-11-16
+
+### Corretto
+
+- Le azioni con una configurazione inesistente restituiscono un messaggio chiaro invece di "Unknown error".
+- Tutte le azioni usano il selettore della configurazione al posto del campo di testo per l'identificativo.
+
 ## [0.4.1] - 2026-11-16
 
 ### Modificato

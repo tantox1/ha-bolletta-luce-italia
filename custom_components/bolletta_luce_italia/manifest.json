@@ -8,5 +8,5 @@
   "documentation": "https://github.com/tantox1/ha-bolletta-luce-italia",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/tantox1/ha-bolletta-luce-italia/issues",
-  "version": "0.4.1"
+  "version": "0.4.2"
 }

@@ -3,10 +3,12 @@ registra_bolletta:
   description: Inserisce o sostituisce consumi fatturati e totale di un mese.
   fields:
     entry_id:
-      name: Identificativo configurazione
+      name: Configurazione
+      description: Seleziona la configurazione di Bolletta Luce Italia.
       required: true
       selector:
-        text:
+        config_entry:
+          integration: bolletta_luce_italia
     month:
       name: Mese
       description: Formato AAAA-MM.
@@ -67,10 +69,12 @@ archivia_mese:
   description: Salva manualmente la fotografia corrente del calcolo mensile.
   fields:
     entry_id:
-      name: Identificativo configurazione
+      name: Configurazione
+      description: Seleziona la configurazione di Bolletta Luce Italia.
       required: true
       selector:
-        text:
+        config_entry:
+          integration: bolletta_luce_italia
     month:
       name: Mese
       description: Facoltativo, formato AAAA-MM.
@@ -82,10 +86,12 @@ registra_stima_mese:
   description: Inserisce o sostituisce la stima chiusa di un mese non archiviato, per completare un bimestre.
   fields:
     entry_id:
-      name: Identificativo configurazione
+      name: Configurazione
+      description: Seleziona la configurazione di Bolletta Luce Italia.
       required: true
       selector:
-        text:
+        config_entry:
+          integration: bolletta_luce_italia
     month:
       name: Mese
       description: Formato AAAA-MM.

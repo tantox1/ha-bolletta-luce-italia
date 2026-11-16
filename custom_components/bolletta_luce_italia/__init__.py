@@ -8,6 +8,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
@@ -88,6 +89,18 @@ def _prepare_invoice(values: dict[str, Any]) -> dict[str, Any]:
     return invoice
 
 
+def _coordinator(hass: HomeAssistant, call: ServiceCall) -> BillCoordinator:
+    """Restituisce il coordinatore della configurazione indicata."""
+    entry_id = call.data["entry_id"]
+    target = hass.data.get(DOMAIN, {}).get(entry_id)
+    if target is None:
+        raise ServiceValidationError(
+            f"Configurazione di Bolletta Luce Italia non trovata: '{entry_id}'. "
+            "Seleziona la configurazione dal campo in modalità UI."
+        )
+    return target
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Configura una voce dall'interfaccia di Home Assistant."""
     coordinator = BillCoordinator(hass, entry)
@@ -95,9 +108,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     async def _record_invoice(call: ServiceCall) -> None:
-        target = hass.data[DOMAIN].get(call.data["entry_id"])
-        if target is None:
-            raise ValueError("Voce di Bolletta Luce Italia non trovata")
+        target = _coordinator(hass, call)
         await target.async_record_invoice(
             call.data["month"],
             call.data["energy"],
@@ -105,9 +116,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     async def _import_history(call: ServiceCall) -> None:
-        target = hass.data[DOMAIN].get(call.data["entry_id"])
-        if target is None:
-            raise ValueError("Voce di Bolletta Luce Italia non trovata")
+        target = _coordinator(hass, call)
         invoices = [
             _prepare_invoice(dict(invoice))
             for invoice in call.data["invoices"]
@@ -115,15 +124,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await target.async_import_invoices(invoices)
 
     async def _archive_month(call: ServiceCall) -> None:
-        target = hass.data[DOMAIN].get(call.data["entry_id"])
-        if target is None:
-            raise ValueError("Voce di Bolletta Luce Italia non trovata")
+        target = _coordinator(hass, call)
         await target.async_archive_current(call.data.get("month"))
 
     async def _set_month_estimate(call: ServiceCall) -> None:
-        target = hass.data[DOMAIN].get(call.data["entry_id"])
-        if target is None:
-            raise ValueError("Voce di Bolletta Luce Italia non trovata")
+        target = _coordinator(hass, call)
         await target.async_set_month_estimate(
             call.data["month"],
             call.data["estimate"],

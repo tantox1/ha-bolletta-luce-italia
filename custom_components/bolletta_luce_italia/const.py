@@ -51,7 +51,7 @@ BILLING_BIMONTHLY = "bimonthly"
 BIMESTER_ODD = "odd"
 BIMESTER_EVEN = "even"
 
-INTEGRATION_VERSION = "0.4.1"
+INTEGRATION_VERSION = "0.4.2"
 
 DEFAULTS = {
     CONF_NAME: "Bolletta luce",
