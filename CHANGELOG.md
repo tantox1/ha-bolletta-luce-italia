@@ -1,8 +1,19 @@
 # Registro delle modifiche
 
-Tutte le modifiche rilevanti di Bolletta Luce Italia sono documentate in questo file.
+Tutte le modifiche rilevanti di Bolletta Luce Italia sono documentate in questo file. Le versioni fino alla 0.3.0 sono quelle del progetto originale [atcodrinky/ha-bolletta-luce-italia](https://github.com/atcodrinky/ha-bolletta-luce-italia); dalla 0.4.0 sono modifiche del fork.
 
 Il progetto usa il versionamento semantico e i tag nel formato `vMAJOR.MINOR.PATCH`.
+
+## [0.4.1] - 2026-11-16
+
+### Modificato
+
+- Documentazione aggiornata per il fork `tantox1/ha-bolletta-luce-italia`: descrizione, crediti all'originale, sezione delle modifiche rispetto all'originale e istruzioni per passare dall'originale al fork senza perdere i dati.
+- Collegamenti a documentazione e segnalazioni del manifest e badge di installazione puntano al fork.
+
+### Aggiunto
+
+- Esempio di dashboard in `examples/dashboard-bolletta-luce.yaml`.
 
 ## [0.4.0] - 2026-11-16
 

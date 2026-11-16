@@ -1,0 +1,425 @@
+# Dashboard "Bolletta luce" per Bolletta Luce Italia 0.4.0
+#
+# Come usarla: Impostazioni → Dashboard → Aggiungi dashboard → "Nuova dashboard da zero",
+# aprila, ⋮ → Modifica → ⋮ → Editor configurazione YAML, incolla tutto e salva.
+#
+# Le entità presumono il nome configurazione predefinito "Bolletta luce"
+# (sensor.bolletta_luce_...). Se l'hai chiamata diversamente, sostituisci il prefisso.
+#
+# I grafici "custom:apexcharts-card" richiedono ApexCharts Card da HACS (Frontend).
+# Tutte le altre card sono native.
+
+title: Bolletta luce
+views:
+  - title: Bolletta
+    path: bolletta
+    icon: mdi:receipt-text-outline
+    type: sections
+    max_columns: 3
+    sections:
+      # ─────────────────────────── PERIODO IN CORSO ───────────────────────────
+      - type: grid
+        cards:
+          - type: heading
+            heading: Periodo in corso
+            icon: mdi:calendar-range
+          - type: markdown
+            text_only: true
+            content: |
+              {% set e = 'sensor.bolletta_luce_stima_bolletta_del_periodo' %}
+              {% set p = 'sensor.bolletta_luce_proiezione_bolletta_del_mese' %}
+              ### {{ state_attr(e, 'period_label') or '—' }}
+
+              Bolletta **{{ 'bimestrale' if state_attr(e, 'billing_period') == 'bimonthly' else 'mensile' }}**
+              · mese **{{ state_attr(e, 'month_in_period') }} di {{ state_attr(e, 'months_in_period') }}**
+              · trascorso il **{{ state_attr(p, 'month_elapsed_percent') }}%** del mese
+
+              {% if state_attr(e, 'period_complete') == false %}
+              ⚠️ Manca la stima di **{{ state_attr(e, 'period_missing_months') | join(', ') }}**:
+              la stima del periodo comprende solo i mesi disponibili.
+              Completala con il servizio *Registra stima di un mese*.
+              {% endif %}
+          - type: tile
+            entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+            name: Stima ad oggi
+            icon: mdi:cash-multiple
+            color: blue
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.bolletta_luce_proiezione_bolletta_del_periodo
+            name: Previsione a fine periodo
+            icon: mdi:crystal-ball
+            color: deep-purple
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.bolletta_luce_stima_bolletta_del_mese
+            name: Mese in corso
+            icon: mdi:calendar-month
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.bolletta_luce_proiezione_bolletta_del_mese
+            name: Previsione fine mese
+            icon: mdi:chart-line-variant
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.bolletta_luce_energia_fatturabile_del_periodo
+            name: Energia del periodo
+            icon: mdi:lightning-bolt
+            color: amber
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.bolletta_luce_costo_medio_effettivo
+            name: Costo medio
+            icon: mdi:scale-balance
+            color: teal
+            grid_options:
+              columns: 6
+
+      # ─────────────────────────── COMPOSIZIONE ───────────────────────────
+      - type: grid
+        cards:
+          - type: heading
+            heading: Composizione del periodo
+            icon: mdi:chart-donut
+          - type: custom:apexcharts-card
+            chart_type: donut
+            header:
+              show: false
+            apex_config:
+              legend:
+                position: bottom
+              dataLabels:
+                enabled: true
+              plotOptions:
+                pie:
+                  donut:
+                    labels:
+                      show: true
+                      total:
+                        show: true
+                        label: Totale
+            series:
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_matter
+                name: Materia energia
+                unit: €
+                float_precision: 2
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_network_cost
+                name: Rete e oneri
+                unit: €
+                float_precision: 2
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_fixed_cost
+                name: Quote fisse
+                unit: €
+                float_precision: 2
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_cdispd_cost
+                name: CdispD
+                unit: €
+                float_precision: 2
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_excise
+                name: Accise
+                unit: €
+                float_precision: 2
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_vat
+                name: IVA
+                unit: €
+                float_precision: 2
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_rai
+                name: Canone RAI
+                unit: €
+                float_precision: 2
+          - type: custom:apexcharts-card
+            chart_type: donut
+            header:
+              show: true
+              title: Energia per fascia (periodo)
+              show_states: false
+            apex_config:
+              legend:
+                position: bottom
+            series:
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_energy_f1
+                name: F1
+                unit: kWh
+                float_precision: 0
+                color: "#e57373"
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_energy_f2
+                name: F2
+                unit: kWh
+                float_precision: 0
+                color: "#ffb74d"
+              - entity: sensor.bolletta_luce_stima_bolletta_del_periodo
+                attribute: period_energy_f3
+                name: F3
+                unit: kWh
+                float_precision: 0
+                color: "#81c784"
+
+      # ─────────────────────────── STIME VS BOLLETTE ───────────────────────────
+      - type: grid
+        cards:
+          - type: heading
+            heading: Stime e bollette reali
+            icon: mdi:compare-horizontal
+          - type: custom:apexcharts-card
+            graph_span: 13month
+            span:
+              end: month
+            header:
+              show: true
+              title: Per periodo di fatturazione
+              show_states: false
+            apex_config:
+              chart:
+                height: 260
+              plotOptions:
+                bar:
+                  columnWidth: 70%
+              xaxis:
+                labels:
+                  format: MMM yy
+              yaxis:
+                - decimalsInFloat: 0
+              legend:
+                show: true
+              tooltip:
+                x:
+                  format: MMMM yyyy
+            series:
+              - entity: sensor.bolletta_luce_storico_periodi
+                name: Stima
+                type: column
+                unit: €
+                float_precision: 2
+                color: "#64b5f6"
+                data_generator: |
+                  return (entity.attributes.period_archive || [])
+                    .map(p => [new Date(p.period_start + 'T00:00:00').getTime(),
+                               p.estimate ?? p.estimate_partial])
+                    .filter(p => p[1] != null);
+              - entity: sensor.bolletta_luce_storico_periodi
+                name: Bolletta reale
+                type: column
+                unit: €
+                float_precision: 2
+                color: "#ef6c00"
+                data_generator: |
+                  return (entity.attributes.period_archive || [])
+                    .filter(p => p.real_total != null)
+                    .map(p => [new Date(p.period_start + 'T00:00:00').getTime(), p.real_total]);
+              - entity: sensor.bolletta_luce_proiezione_bolletta_del_periodo
+                name: Previsione
+                type: column
+                unit: €
+                float_precision: 2
+                color: "#9575cd"
+                data_generator: |
+                  return [[new Date(entity.attributes.period_start + 'T00:00:00').getTime(),
+                           parseFloat(entity.state)]];
+          - type: markdown
+            content: |
+              {% set periods = state_attr('sensor.bolletta_luce_storico_periodi', 'period_archive') or [] %}
+              {% macro eur(v) %}{{ ('%.2f' | format(v)).replace('.', ',') ~ ' €' if v is number else '—' }}{% endmacro %}
+              | Periodo | Stima | Reale | Scost. |
+              |:--|--:|--:|--:|
+              {% for p in periods | reverse %}| {{ p.label }}{{ ' ⏳' if p.in_progress }} | {{ eur(p.estimate if p.estimate is number else p.estimate_partial) }} | {{ eur(p.real_total) }} | {{ eur(p.deviation) }} |
+              {% endfor %}
+          - type: entities
+            title: Ultima bolletta registrata
+            entities:
+              - entity: sensor.bolletta_luce_ultima_bolletta_totale_confrontabile
+                name: Totale (con RAI, senza bonus)
+              - entity: sensor.bolletta_luce_ultima_bolletta_totale_da_pagare
+                name: Totale pagato
+              - entity: sensor.bolletta_luce_ultima_bolletta_consumi_fatturati
+                name: Consumi fatturati
+              - entity: sensor.bolletta_luce_scostamento_ultima_bolletta
+                name: Scostamento dalla stima
+              - type: attribute
+                entity: sensor.bolletta_luce_scostamento_ultima_bolletta
+                attribute: deviation_months
+                name: Mesi confrontati
+              - entity: sensor.bolletta_luce_bollette_archiviate
+                name: Bollette in archivio
+
+      # ─────────────────────────── ANDAMENTO ───────────────────────────
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Andamento
+            icon: mdi:chart-timeline-variant
+          - type: custom:apexcharts-card
+            graph_span: 12month
+            span:
+              end: month
+            header:
+              show: true
+              title: Energia mensile per fascia
+              show_states: false
+            apex_config:
+              chart:
+                stacked: true
+                height: 260
+              xaxis:
+                labels:
+                  format: MMM yy
+              yaxis:
+                - decimalsInFloat: 0
+              tooltip:
+                x:
+                  format: MMMM yyyy
+            series:
+              - entity: sensor.bolletta_luce_storico_periodi
+                name: F1
+                type: column
+                unit: kWh
+                float_precision: 0
+                color: "#e57373"
+                data_generator: |
+                  const band = 'energy_f1';
+                  const live = 'sensor.bolletta_luce_energia_fatturabile_f1';
+                  const now = new Date();
+                  const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                  const months = entity.attributes.monthly_archive || {};
+                  const pts = Object.entries(months)
+                    .filter(([k]) => k !== cur)
+                    .map(([k, v]) => [new Date(k + '-01T00:00:00').getTime(), v[band]]);
+                  const s = hass.states[live];
+                  if (s) pts.push([new Date(cur + '-01T00:00:00').getTime(), parseFloat(s.state)]);
+                  return pts.filter(p => p[1] != null && !isNaN(p[1]));
+              - entity: sensor.bolletta_luce_storico_periodi
+                name: F2
+                type: column
+                unit: kWh
+                float_precision: 0
+                color: "#ffb74d"
+                data_generator: |
+                  const band = 'energy_f2';
+                  const live = 'sensor.bolletta_luce_energia_fatturabile_f2';
+                  const now = new Date();
+                  const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                  const months = entity.attributes.monthly_archive || {};
+                  const pts = Object.entries(months)
+                    .filter(([k]) => k !== cur)
+                    .map(([k, v]) => [new Date(k + '-01T00:00:00').getTime(), v[band]]);
+                  const s = hass.states[live];
+                  if (s) pts.push([new Date(cur + '-01T00:00:00').getTime(), parseFloat(s.state)]);
+                  return pts.filter(p => p[1] != null && !isNaN(p[1]));
+              - entity: sensor.bolletta_luce_storico_periodi
+                name: F3
+                type: column
+                unit: kWh
+                float_precision: 0
+                color: "#81c784"
+                data_generator: |
+                  const band = 'energy_f3';
+                  const live = 'sensor.bolletta_luce_energia_fatturabile_f3';
+                  const now = new Date();
+                  const cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                  const months = entity.attributes.monthly_archive || {};
+                  const pts = Object.entries(months)
+                    .filter(([k]) => k !== cur)
+                    .map(([k, v]) => [new Date(k + '-01T00:00:00').getTime(), v[band]]);
+                  const s = hass.states[live];
+                  if (s) pts.push([new Date(cur + '-01T00:00:00').getTime(), parseFloat(s.state)]);
+                  return pts.filter(p => p[1] != null && !isNaN(p[1]));
+          - type: statistics-graph
+            title: Stima del mese e previsione, giorno per giorno
+            entities:
+              - entity: sensor.bolletta_luce_stima_bolletta_del_mese
+                name: Stima
+              - entity: sensor.bolletta_luce_proiezione_bolletta_del_mese
+                name: Previsione fine mese
+            stat_types:
+              - max
+            period: day
+            days_to_show: 62
+            chart_type: line
+            hide_legend: false
+          - type: statistics-graph
+            title: Prezzo energia per fascia (€/kWh)
+            entities:
+              - entity: sensor.bolletta_luce_prezzo_energia_f1
+                name: F1
+              - entity: sensor.bolletta_luce_prezzo_energia_f2
+                name: F2
+              - entity: sensor.bolletta_luce_prezzo_energia_f3
+                name: F3
+            stat_types:
+              - mean
+            period: day
+            days_to_show: 62
+            chart_type: line
+            grid_options:
+              columns: 6
+          - type: statistics-graph
+            title: Costo medio effettivo (€/kWh)
+            entities:
+              - entity: sensor.bolletta_luce_costo_medio_effettivo
+                name: Costo medio
+            stat_types:
+              - mean
+            period: day
+            days_to_show: 62
+            chart_type: line
+            grid_options:
+              columns: 6
+
+      # ─────────────────────────── DETTAGLIO MESE ───────────────────────────
+      - type: grid
+        cards:
+          - type: heading
+            heading: Dettaglio del mese
+            icon: mdi:format-list-bulleted
+          - type: entities
+            state_color: false
+            entities:
+              - entity: sensor.bolletta_luce_costo_fascia_f1
+                name: Energia F1
+              - entity: sensor.bolletta_luce_costo_fascia_f2
+                name: Energia F2
+              - entity: sensor.bolletta_luce_costo_fascia_f3
+                name: Energia F3
+              - entity: sensor.bolletta_luce_servizi_di_rete_e_oneri
+                name: Rete e oneri
+              - entity: sensor.bolletta_luce_costo_cdispd
+                name: CdispD
+              - entity: sensor.bolletta_luce_quote_fisse
+                name: Quote fisse
+              - entity: sensor.bolletta_luce_accise
+                name: Accise
+              - entity: sensor.bolletta_luce_iva
+                name: IVA
+              - entity: sensor.bolletta_luce_canone_rai
+                name: Canone RAI
+              - type: divider
+              - entity: sensor.bolletta_luce_stima_bolletta_del_mese
+                name: Totale mese
+          - type: entities
+            title: Ricarica auto
+            entities:
+              - entity: sensor.bolletta_luce_auto_energia_da_rete
+                name: Da rete
+              - entity: sensor.bolletta_luce_auto_energia_da_fotovoltaico
+                name: Da fotovoltaico
+              - entity: sensor.bolletta_luce_auto_quota_bolletta
+                name: Quota in bolletta
+              - type: attribute
+                entity: sensor.bolletta_luce_auto_quota_bolletta
+                attribute: ev_share
+                name: Quota sul totale
+                suffix: "%"

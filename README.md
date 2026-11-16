@@ -1,11 +1,41 @@
-# Bolletta Luce Italia
+# Bolletta Luce Italia (fork con bolletta bimestrale)
 
-Bolletta Luce Italia è un'integrazione personalizzata per Home Assistant che stima e archivia la bolletta elettrica italiana partendo dai consumi mensili F1, F2 e F3.
+Integrazione personalizzata per Home Assistant che stima e archivia la bolletta elettrica italiana partendo dai consumi mensili F1, F2 e F3, con supporto alla **bolletta mensile e bimestrale**, previsione a fine periodo e una dashboard pronta con grafici.
+
+> Questo repository è un fork di [atcodrinky/ha-bolletta-luce-italia](https://github.com/atcodrinky/ha-bolletta-luce-italia), di cui mantiene il motore di calcolo, la configurazione guidata e la licenza MIT. Le differenze sono elencate in [Modifiche rispetto all'originale](#modifiche-rispetto-alloriginale).
 
 La configurazione guidata è suddivisa in cinque pagine e l'integrazione può essere verificata in parallelo ai sensori template esistenti.
 
-[![Apri nel Marketplace di Home Assistant](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=atcodrinky&repository=ha-bolletta-luce-italia&category=integration)
+[![Apri nel Marketplace di Home Assistant](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=tantox1&repository=ha-bolletta-luce-italia&category=integration)
 
+## Modifiche rispetto all'originale
+
+Basato sulla versione 0.3.0 dell'originale. Tutto ciò che c'era continua a funzionare allo stesso modo: chi ha una bolletta mensile non deve cambiare nulla e configurazione, entità e archivio esistenti vengono mantenuti.
+
+**Fatturazione bimestrale**
+
+- Nuova opzione *Periodicità della bolletta* (mensile o bimestrale) con la sequenza dei bimestri: gen–feb, mar–apr, … oppure dic–gen, feb–mar, ….
+- Nuovi sensori `Stima bolletta del periodo`, `Energia fatturabile del periodo`, `Proiezione bolletta del mese` e `Proiezione bolletta del periodo`.
+- Nuovo sensore `Storico periodi` con stime e bollette reali raggruppate per periodo, pensato per i grafici.
+- Nuovo servizio `registra_stima_mese` per inserire la stima di un mese non archiviato e completare un bimestre.
+
+**Cambio di contratto senza perdere lo storico**
+
+- Campo *Decorrenza* (AAAA-MM) per indicare da quando vale una nuova periodicità, anche futura.
+- Calendario delle periodicità salvato nello storage: ogni mese e ogni bolletta vengono letti con la periodicità valida allora e un bimestre non attraversa mai un cambio di contratto.
+
+**Correzioni**
+
+- `Scostamento ultima bolletta` confronta la bolletta con la somma delle stime di tutti i mesi che copre; nell'originale una bolletta bimestrale veniva confrontata con la stima di un solo mese, con uno scostamento circa doppio.
+- Lo snapshot del mese in corso è salvato nello storage: un riavvio a cavallo di fine mese non perde più la stima del mese chiuso.
+- L'archivio mensile non duplica più lo storico delle bollette e gli archivi esposti come attributi sono esclusi dal recorder.
+- Il coordinatore riceve esplicitamente la voce di configurazione e la versione del dispositivo segue quella dell'integrazione.
+
+**Dashboard**
+
+- Esempio pronto in [`examples/dashboard-bolletta-luce.yaml`](examples/dashboard-bolletta-luce.yaml); vedi [Dashboard](#dashboard).
+
+Il dettaglio versione per versione è nel [registro delle modifiche](CHANGELOG.md).
 
 ## Funzioni disponibili
 
@@ -41,7 +71,9 @@ Questi sensori, il relativo misuratore di utilità e lo storico della Dashboard 
 3. Aprire Impostazioni, Dispositivi e servizi, Aggiungi integrazione.
 4. Cercare Bolletta Luce Italia.
 
-È possibile aggiungere questo repository anche come repository personalizzato di tipo Integrazione nel Marketplace di Home Assistant.
+È possibile aggiungere questo repository anche come repository personalizzato di tipo Integrazione in HACS: `https://github.com/tantox1/ha-bolletta-luce-italia`.
+
+Chi usava l'originale può passare a questo fork senza perdere nulla: in HACS rimuovi l'integrazione (vengono tolti solo i file), aggiungi questo repository personalizzato, scarica l'ultima versione e riavvia Home Assistant. Configurazione, entità e archivio restano.
 
 ## Configurazione consigliata per Octopus
 
@@ -149,6 +181,17 @@ Si può passare da mensile a bimestrale (o viceversa, o cambiare la sequenza dei
 
 L'integrazione tiene un calendario delle periodicità (attributo `billing_schedule` del sensore `Storico periodi`): ogni mese archiviato e ogni bolletta vengono raggruppati con la periodicità valida in quel momento, e un bimestre non attraversa mai il cambio di contratto. Se la decorrenza cade nel secondo mese di un bimestre, il primo periodo dura un solo mese. Per correggere una decorrenza sbagliata basta salvare di nuovo le opzioni indicando quella giusta.
 
+## Dashboard
+
+Il file [`examples/dashboard-bolletta-luce.yaml`](examples/dashboard-bolletta-luce.yaml) contiene una dashboard completa:
+
+- periodo in corso con stima ad oggi e previsione a fine mese e a fine periodo;
+- composizione del periodo per voce di costo e per fascia;
+- stime e bollette reali a confronto per periodo, con tabella dello scostamento;
+- andamento dell'energia mensile per fascia, della stima giorno per giorno e dei prezzi.
+
+Per usarla: Impostazioni → Dashboard → Aggiungi dashboard → Nuova dashboard da zero, poi ⋮ → Modifica → ⋮ → Editor configurazione YAML e incolla il contenuto. I grafici a colonne e a ciambella richiedono [ApexCharts Card](https://github.com/RomRider/apexcharts-card) da HACS; le altre card sono native. Le entità presumono il nome configurazione predefinito *Bolletta luce*: se ne hai scelto un altro sostituisci il prefisso `sensor.bolletta_luce_`.
+
 ## Opzioni e applicazione immediata
 
 Aprire l'integrazione e scegliere Configura. Il pulsante Salva applica i nuovi valori ricaricando soltanto Bolletta Luce Italia: non è necessario riavviare Home Assistant e non occorre eliminare o ricreare la configurazione.
@@ -164,6 +207,8 @@ Aprire l'integrazione e scegliere Configura. Il pulsante Salva applica i nuovi v
 
 Il progetto usa il versionamento semantico. Le versioni pubblicate sono identificate da tag nel formato vMAJOR.MINOR.PATCH. Ogni pubblicazione deve aggiornare il [registro delle modifiche](CHANGELOG.md).
 
-## Licenza
+## Crediti e licenza
 
-Distribuito con licenza MIT.
+Progetto originale di [atcodrinky](https://github.com/atcodrinky/ha-bolletta-luce-italia). Modifiche del fork di [tantox1](https://github.com/tantox1).
+
+Distribuito con licenza MIT, come l'originale.
