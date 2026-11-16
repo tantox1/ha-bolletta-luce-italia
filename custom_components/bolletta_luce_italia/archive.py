@@ -50,6 +50,14 @@ class BillArchive:
         self.data.setdefault("months", {})[month] = trim_snapshot(snapshot)
         await self.async_save()
 
+    def billing_schedule(self) -> list[dict[str, Any]]:
+        return list(self.data.get("billing_schedule") or [])
+
+    async def async_set_billing_schedule(self, schedule: list[dict[str, Any]]) -> None:
+        if schedule != self.data.get("billing_schedule"):
+            self.data["billing_schedule"] = schedule
+            await self.async_save()
+
     def active(self) -> tuple[str | None, dict[str, Any] | None]:
         """Ultimo snapshot salvato del mese in corso."""
         active = self.data.get("active") or {}

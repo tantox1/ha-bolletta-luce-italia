@@ -46,7 +46,7 @@
       },
       "taxes": {
         "title": "Imposte, canone RAI e fatturazione — 4/5",
-        "description": "Configura correzione dei consumi, accisa, IVA, rate del canone RAI e periodicità della bolletta. Per la bimestrale scegli la sequenza dei bimestri indicata in bolletta; viene ignorata se la bolletta è mensile.",
+        "description": "Configura correzione dei consumi, accisa, IVA, rate del canone RAI e periodicità della bolletta. Per la bimestrale scegli la sequenza dei bimestri indicata in bolletta. Se cambi periodicità per un nuovo contratto, indica il primo mese del nuovo contratto (AAAA-MM): i mesi precedenti restano con la periodicità di allora. Lasciando vuoto, il cambio vale dal mese corrente.",
         "data": {
           "correction_factor": "Fattore di correzione consumi",
           "excise": "Accisa (€/kWh)",
@@ -55,7 +55,8 @@
           "rai_installments": "Numero rate RAI",
           "_go_back": "Torna alla pagina precedente",
           "billing_period": "Periodicità della bolletta",
-          "bimester_start": "Sequenza dei bimestri"
+          "bimester_start": "Sequenza dei bimestri",
+          "billing_from": "Decorrenza della periodicità (AAAA-MM, facoltativa)"
         }
       },
       "ev": {
@@ -72,7 +73,8 @@
     },
     "error": {
       "pun_required": "Per una tariffa indicizzata devi indicare tutti e tre i sensori PUN.",
-      "ev_grid_required": "Per la ripartizione auto devi indicare il sensore dell’energia wallbox prelevata dalla rete."
+      "ev_grid_required": "Per la ripartizione auto devi indicare il sensore dell’energia wallbox prelevata dalla rete.",
+      "invalid_month": "La decorrenza deve essere nel formato AAAA-MM, per esempio 2027-01."
     },
     "abort": {}
   },
@@ -122,7 +124,7 @@
       },
       "taxes": {
         "title": "Imposte, canone RAI e fatturazione — 4/5",
-        "description": "Configura correzione dei consumi, accisa, IVA, rate del canone RAI e periodicità della bolletta. Per la bimestrale scegli la sequenza dei bimestri indicata in bolletta; viene ignorata se la bolletta è mensile.",
+        "description": "Configura correzione dei consumi, accisa, IVA, rate del canone RAI e periodicità della bolletta. Per la bimestrale scegli la sequenza dei bimestri indicata in bolletta. Se cambi periodicità per un nuovo contratto, indica il primo mese del nuovo contratto (AAAA-MM): i mesi precedenti restano con la periodicità di allora. Lasciando vuoto, il cambio vale dal mese corrente.",
         "data": {
           "correction_factor": "Fattore di correzione consumi",
           "excise": "Accisa (€/kWh)",
@@ -131,7 +133,8 @@
           "rai_installments": "Numero rate RAI",
           "_go_back": "Torna alla pagina precedente",
           "billing_period": "Periodicità della bolletta",
-          "bimester_start": "Sequenza dei bimestri"
+          "bimester_start": "Sequenza dei bimestri",
+          "billing_from": "Decorrenza della periodicità (AAAA-MM, facoltativa)"
         }
       },
       "ev": {
@@ -148,7 +151,8 @@
     },
     "error": {
       "pun_required": "Per una tariffa indicizzata devi indicare tutti e tre i sensori PUN.",
-      "ev_grid_required": "Per la ripartizione auto devi indicare il sensore dell’energia wallbox prelevata dalla rete."
+      "ev_grid_required": "Per la ripartizione auto devi indicare il sensore dell’energia wallbox prelevata dalla rete.",
+      "invalid_month": "La decorrenza deve essere nel formato AAAA-MM, per esempio 2027-01."
     }
   },
   "services": {

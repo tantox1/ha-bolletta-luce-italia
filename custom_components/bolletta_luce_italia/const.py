@@ -38,6 +38,10 @@ CONF_EV_PV = "ev_pv"
 CONF_EV_INCLUDE_FIXED = "ev_include_fixed"
 CONF_BILLING_PERIOD = "billing_period"
 CONF_BIMESTER_START = "bimester_start"
+CONF_BILLING_FROM = "billing_from"
+# Chiave interna: calendario delle periodicità, letto dallo storage.
+BILLING_SCHEDULE = "billing_schedule"
+SCHEDULE_ORIGIN = "0000-01"
 
 TARIFF_INDEXED = "indexed"
 TARIFF_FIXED = "fixed"

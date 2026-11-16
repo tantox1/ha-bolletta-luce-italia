@@ -17,7 +17,8 @@ from .period import (
     PERIOD_SUM_KEYS,
     build_period_archive,
     invoice_months,
-    is_bimonthly,
+    apply_billing_change,
+    is_bimonthly_at,
     month_elapsed_fraction,
     period_bounds,
     period_label,
@@ -45,13 +46,26 @@ class BillCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def config(self) -> dict[str, Any]:
-        return {**self.entry.data, **self.entry.options}
+        cfg = {**self.entry.data, **self.entry.options}
+        cfg[BILLING_SCHEDULE] = self.archive.billing_schedule()  # noqa: F405
+        return cfg
 
     async def _async_setup(self) -> None:
         await self.archive.async_load()
         # Recupera il mese in corso salvato prima del riavvio: se nel frattempo
         # il mese è cambiato, il primo aggiornamento lo archivia correttamente.
         self._active_month, self._active_snapshot = self.archive.active()
+        # Registra nel calendario un eventuale cambio di periodicità.
+        options = {**self.entry.data, **self.entry.options}
+        schedule = apply_billing_change(
+            self.archive.billing_schedule(),
+            options.get(CONF_BILLING_PERIOD),  # noqa: F405
+            options.get(CONF_BIMESTER_START),  # noqa: F405
+            # La decorrenza conta solo per l'ultima modifica salvata.
+            (self.entry.options or self.entry.data).get(CONF_BILLING_FROM) or None,  # noqa: F405
+            dt_util.now().strftime("%Y-%m"),
+        )
+        await self.archive.async_set_billing_schedule(schedule)
 
     def _state_number(self, entity_id: str | None, required: bool = False) -> float:
         if not entity_id:
@@ -137,6 +151,7 @@ class BillCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         result["period_archive"] = periods
         result["period_archive_count"] = len(periods)
         result["monthly_archive"] = archived
+        result["billing_schedule"] = cfg[BILLING_SCHEDULE]  # noqa: F405
         return result
 
     def _add_period(
@@ -154,7 +169,7 @@ class BillCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         following = months[position + 1:]
         start, end = period_bounds(months)
 
-        result["billing_period"] = BILLING_BIMONTHLY if is_bimonthly(cfg) else BILLING_MONTHLY  # noqa: F405
+        result["billing_period"] = BILLING_BIMONTHLY if is_bimonthly_at(month_key, cfg) else BILLING_MONTHLY  # noqa: F405
         result["period_label"] = period_label(months)
         result["period_months"] = months
         result["period_start"] = start

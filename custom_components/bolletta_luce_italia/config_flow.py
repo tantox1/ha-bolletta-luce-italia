@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
 import voluptuous as vol
@@ -13,6 +14,7 @@ from homeassistant.helpers import selector
 from .const import *  # noqa: F403
 
 CONF_GO_BACK = "_go_back"
+_MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
 def _value(values: dict[str, Any], key: str) -> Any:
@@ -211,6 +213,7 @@ def _taxes_schema(values: dict[str, Any]) -> vol.Schema:
                 mode=selector.SelectSelectorMode.DROPDOWN,
             )
         ),
+        _optional_entity(values, CONF_BILLING_FROM): selector.TextSelector(),
     }
     fields.update(_back_field())
     return vol.Schema(fields)
@@ -308,13 +311,25 @@ class _WizardMixin:
     async def async_step_taxes(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            if self._store(user_input):
+            user_input = dict(user_input)
+            billing_from = str(user_input.get(CONF_BILLING_FROM) or "").strip()
+            if billing_from:
+                user_input[CONF_BILLING_FROM] = billing_from
+            else:
+                user_input.pop(CONF_BILLING_FROM, None)
+            go_back = self._store(user_input, (CONF_BILLING_FROM,))
+            if go_back:
                 return await self.async_step_network()
-            return await self.async_step_ev()
+            if billing_from and not _MONTH_RE.match(billing_from):
+                errors["base"] = "invalid_month"
+            else:
+                return await self.async_step_ev()
         return self.async_show_form(
             step_id="taxes",
             data_schema=_taxes_schema(self._data),
+            errors=errors,
         )
 
     async def async_step_ev(
@@ -388,6 +403,8 @@ class BollettaLuceItaliaOptionsFlow(
                 **self.config_entry.data,
                 **self.config_entry.options,
             }
+            # La decorrenza vale per la singola modifica: il campo riparte vuoto.
+            self._data.pop(CONF_BILLING_FROM, None)  # noqa: F405
         return await self.async_step_sources(user_input)
 
     async def _async_finish_wizard(self) -> FlowResult:

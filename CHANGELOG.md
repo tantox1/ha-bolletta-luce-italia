@@ -12,6 +12,7 @@ Il progetto usa il versionamento semantico e i tag nel formato `vMAJOR.MINOR.PAT
 - Sensori `Stima bolletta del periodo` ed `Energia fatturabile del periodo`, che sommano il mese in corso ai mesi già chiusi del bimestre, con il dettaglio delle voci come attributi.
 - Sensori `Proiezione bolletta del mese` e `Proiezione bolletta del periodo`: la parte variabile viene estrapolata al tempo trascorso, quote fisse e canone RAI no.
 - Sensore `Storico periodi` con il riepilogo per periodo di stime e bollette reali e lo storico delle stime mensili, pensato per i grafici della dashboard.
+- Decorrenza della periodicità: al cambio di contratto i mesi precedenti mantengono la periodicità di allora, grazie a un calendario salvato nello storage ed esposto come attributo `billing_schedule`.
 - Servizio `bolletta_luce_italia.registra_stima_mese` per completare un bimestre con la stima di un mese non archiviato.
 
 ### Modificato

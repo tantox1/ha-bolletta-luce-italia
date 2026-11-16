@@ -8,9 +8,13 @@ from typing import Any
 
 from .const import (
     BILLING_BIMONTHLY,
+    BILLING_MONTHLY,
+    BILLING_SCHEDULE,
     BIMESTER_EVEN,
+    BIMESTER_ODD,
     CONF_BILLING_PERIOD,
     CONF_BIMESTER_START,
+    SCHEDULE_ORIGIN,
 )
 
 MONTH_NAMES = (
@@ -68,17 +72,135 @@ def is_bimonthly(config: dict[str, Any]) -> bool:
     return config.get(CONF_BILLING_PERIOD) == BILLING_BIMONTHLY
 
 
+# ─── Calendario delle periodicità ───────────────────────────────────────────
+#
+# Ogni voce indica da quale mese vale una periodicità:
+#   {"from": "2027-01", "billing_period": "bimonthly", "bimester_start": "odd"}
+# La prima voce parte da SCHEDULE_ORIGIN e copre tutto lo storico precedente.
+# Un periodo di fatturazione non attraversa mai un cambio di contratto.
+
+
+def _segment_settings(period: str | None, start: str | None) -> dict[str, str]:
+    return {
+        "billing_period": period or BILLING_MONTHLY,
+        "bimester_start": start or BIMESTER_ODD,
+    }
+
+
+def _same_settings(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    if a.get("billing_period") != b.get("billing_period"):
+        return False
+    # La sequenza dei bimestri conta soltanto per la bimestrale.
+    return a.get("billing_period") != BILLING_BIMONTHLY or (
+        a.get("bimester_start") == b.get("bimester_start")
+    )
+
+
+def _insert(
+    items: list[dict[str, Any]],
+    wanted: dict[str, str],
+    effective: str,
+) -> list[dict[str, Any]]:
+    """Fa valere la periodicità da "effective", eliminando le voci successive."""
+    kept = [item for item in items if item["from"] < effective]
+    if not kept:
+        return [{"from": SCHEDULE_ORIGIN, **wanted}]
+    if _same_settings(kept[-1], wanted):
+        return kept
+    return kept + [{"from": effective, **wanted}]
+
+
+def apply_billing_change(
+    schedule: list[dict[str, Any]] | None,
+    period: str | None,
+    start: str | None,
+    from_month: str | None,
+    current_month: str,
+) -> list[dict[str, Any]]:
+    """Aggiorna il calendario con la periodicità configurata.
+
+    - senza calendario: la periodicità vale da sempre; se è indicata una
+      decorrenza, prima di quella data si assume la mensile;
+    - periodicità uguale all'ultima voce: invariato, salvo una decorrenza
+      diversa indicata esplicitamente, che sposta l'inizio dell'ultima voce;
+    - periodicità diversa: vale dalla decorrenza indicata o dal mese corrente.
+    """
+    wanted = _segment_settings(period, start)
+    monthly = _segment_settings(None, None)
+    items = sorted(
+        (dict(item) for item in (schedule or []) if item.get("from")),
+        key=lambda item: item["from"],
+    )
+    if not items:
+        if from_month and not _same_settings(wanted, monthly):
+            return [
+                {"from": SCHEDULE_ORIGIN, **monthly},
+                {"from": from_month, **wanted},
+            ]
+        return [{"from": SCHEDULE_ORIGIN, **wanted}]
+
+    if _same_settings(items[-1], wanted):
+        if from_month and len(items) > 1 and from_month != items[-1]["from"]:
+            return _insert(items[:-1], wanted, from_month)
+        return items
+    return _insert(items, wanted, from_month or current_month)
+
+
+def _schedule(config: dict[str, Any]) -> list[dict[str, Any]]:
+    items = config.get(BILLING_SCHEDULE) or []
+    return sorted(items, key=lambda item: item["from"])
+
+
+def settings_for_month(month_key: str, config: dict[str, Any]) -> dict[str, Any]:
+    """Periodicità valida nel mese indicato."""
+    items = _schedule(config)
+    if not items:
+        return {
+            CONF_BILLING_PERIOD: config.get(CONF_BILLING_PERIOD),
+            CONF_BIMESTER_START: config.get(CONF_BIMESTER_START),
+        }
+    chosen = items[0]
+    for item in items:
+        if item["from"] <= month_key:
+            chosen = item
+    return {
+        CONF_BILLING_PERIOD: chosen.get("billing_period"),
+        CONF_BIMESTER_START: chosen.get("bimester_start"),
+    }
+
+
+def _segment_range(month_key: str, config: dict[str, Any]) -> tuple[str, str | None]:
+    """Primo mese e mese di fine esclusa del contratto che contiene il mese."""
+    items = _schedule(config)
+    start, end = SCHEDULE_ORIGIN, None
+    for item in items:
+        if item["from"] <= month_key:
+            start = item["from"]
+        elif end is None:
+            end = item["from"]
+    return start, end
+
+
+def is_bimonthly_at(month_key: str, config: dict[str, Any]) -> bool:
+    return is_bimonthly(settings_for_month(month_key, config))
+
+
 def period_months(month_key: str, config: dict[str, Any]) -> list[str]:
     """Mesi del periodo di fatturazione che contiene il mese indicato."""
-    if not is_bimonthly(config):
+    settings = settings_for_month(month_key, config)
+    if not is_bimonthly(settings):
         return [month_key]
     _, month = _parse(month_key)
     # Bimestri dispari: gen-feb, mar-apr, ... Bimestri pari: dic-gen, feb-mar, ...
-    starts_on_odd = config.get(CONF_BIMESTER_START) != BIMESTER_EVEN
+    starts_on_odd = settings.get(CONF_BIMESTER_START) != BIMESTER_EVEN
     first_month = (month % 2 == 1) == starts_on_odd
     if first_month:
-        return [month_key, month_add(month_key, 1)]
-    return [month_add(month_key, -1), month_key]
+        months = [month_key, month_add(month_key, 1)]
+    else:
+        months = [month_add(month_key, -1), month_key]
+    # Al cambio di contratto il primo o l'ultimo bimestre può durare un mese.
+    start, end = _segment_range(month_key, config)
+    return [m for m in months if m >= start and (end is None or m < end)]
 
 
 def period_label(months: list[str]) -> str:

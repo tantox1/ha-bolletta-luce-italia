@@ -143,6 +143,12 @@ Le bollette bimestrali si importano con `importa_storico` come una sola voce: `m
 
 Se un mese del bimestre non è stato archiviato (per esempio perché l'integrazione è stata installata dopo), si può inserire la sua stima con `bolletta_luce_italia.registra_stima_mese` (`month`, `estimate`, facoltativo `energy_total`). Finché manca, la stima del periodo comprende solo i mesi disponibili e l'attributo `period_complete` vale `false`.
 
+### Cambio di periodicità con un nuovo contratto
+
+Si può passare da mensile a bimestrale (o viceversa, o cambiare la sequenza dei bimestri) senza perdere lo storico. Nella stessa pagina indica la **decorrenza**, cioè il primo mese del nuovo contratto in formato AAAA-MM; può essere anche un mese futuro. Lasciando il campo vuoto il cambio vale dal mese corrente.
+
+L'integrazione tiene un calendario delle periodicità (attributo `billing_schedule` del sensore `Storico periodi`): ogni mese archiviato e ogni bolletta vengono raggruppati con la periodicità valida in quel momento, e un bimestre non attraversa mai il cambio di contratto. Se la decorrenza cade nel secondo mese di un bimestre, il primo periodo dura un solo mese. Per correggere una decorrenza sbagliata basta salvare di nuovo le opzioni indicando quella giusta.
+
 ## Opzioni e applicazione immediata
 
 Aprire l'integrazione e scegliere Configura. Il pulsante Salva applica i nuovi valori ricaricando soltanto Bolletta Luce Italia: non è necessario riavviare Home Assistant e non occorre eliminare o ricreare la configurazione.

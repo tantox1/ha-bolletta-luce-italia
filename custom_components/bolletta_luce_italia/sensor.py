@@ -87,7 +87,7 @@ SENSORS: tuple[BillSensorDescription, ...] = (
     BillSensorDescription(key="period_energy_total", name="Energia fatturabile del periodo", attribute_keys=PERIOD_INFO, **ENERGY),
     BillSensorDescription(key="month_projection", name="Proiezione bolletta del mese", attribute_keys=("month", "month_elapsed_percent"), **MONEY),
     BillSensorDescription(key="period_projection", name="Proiezione bolletta del periodo", attribute_keys=PERIOD_INFO + ("month_elapsed_percent",), **MONEY),
-    BillSensorDescription(key="period_archive_count", name="Storico periodi", attribute_keys=("billing_period", "period_archive", "monthly_archive"), unrecorded_keys=frozenset({"period_archive", "monthly_archive"})),
+    BillSensorDescription(key="period_archive_count", name="Storico periodi", attribute_keys=("billing_period", "billing_schedule", "period_archive", "monthly_archive"), unrecorded_keys=frozenset({"period_archive", "monthly_archive"})),
 )
 
 
