@@ -45,15 +45,17 @@
         }
       },
       "taxes": {
-        "title": "Imposte e canone RAI — 4/5",
-        "description": "Configura correzione dei consumi, accisa, IVA e rate del canone RAI.",
+        "title": "Imposte, canone RAI e fatturazione — 4/5",
+        "description": "Configura correzione dei consumi, accisa, IVA, rate del canone RAI e periodicità della bolletta. Per la bimestrale scegli la sequenza dei bimestri indicata in bolletta; viene ignorata se la bolletta è mensile.",
         "data": {
           "correction_factor": "Fattore di correzione consumi",
           "excise": "Accisa (€/kWh)",
           "vat": "IVA (%)",
           "rai_year": "Canone RAI annuo (€)",
           "rai_installments": "Numero rate RAI",
-          "_go_back": "Torna alla pagina precedente"
+          "_go_back": "Torna alla pagina precedente",
+          "billing_period": "Periodicità della bolletta",
+          "bimester_start": "Sequenza dei bimestri"
         }
       },
       "ev": {
@@ -119,15 +121,17 @@
         }
       },
       "taxes": {
-        "title": "Imposte e canone RAI — 4/5",
-        "description": "Configura correzione dei consumi, accisa, IVA e rate del canone RAI.",
+        "title": "Imposte, canone RAI e fatturazione — 4/5",
+        "description": "Configura correzione dei consumi, accisa, IVA, rate del canone RAI e periodicità della bolletta. Per la bimestrale scegli la sequenza dei bimestri indicata in bolletta; viene ignorata se la bolletta è mensile.",
         "data": {
           "correction_factor": "Fattore di correzione consumi",
           "excise": "Accisa (€/kWh)",
           "vat": "IVA (%)",
           "rai_year": "Canone RAI annuo (€)",
           "rai_installments": "Numero rate RAI",
-          "_go_back": "Torna alla pagina precedente"
+          "_go_back": "Torna alla pagina precedente",
+          "billing_period": "Periodicità della bolletta",
+          "bimester_start": "Sequenza dei bimestri"
         }
       },
       "ev": {
@@ -169,6 +173,10 @@
           "description": "Elenco delle bollette mensili complete da importare."
         }
       }
+    },
+    "registra_stima_mese": {
+      "name": "Registra stima di un mese",
+      "description": "Inserisce o sostituisce la stima chiusa di un mese non archiviato, per completare un bimestre."
     }
   }
 }

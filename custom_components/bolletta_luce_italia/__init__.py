@@ -16,6 +16,7 @@ from .const import (
     SERVICE_ARCHIVE_MONTH,
     SERVICE_IMPORT_HISTORY,
     SERVICE_RECORD_INVOICE,
+    SERVICE_SET_MONTH_ESTIMATE,
 )
 from .coordinator import BillCoordinator
 
@@ -32,6 +33,13 @@ SERVICE_INVOICE_SCHEMA = vol.Schema({
 SERVICE_ARCHIVE_SCHEMA = vol.Schema({
     vol.Required("entry_id"): cv.string,
     vol.Optional("month"): _MONTH,
+})
+
+SERVICE_SET_ESTIMATE_SCHEMA = vol.Schema({
+    vol.Required("entry_id"): cv.string,
+    vol.Required("month"): _MONTH,
+    vol.Required("estimate"): _NON_NEGATIVE,
+    vol.Optional("energy_total"): _NON_NEGATIVE,
 })
 
 INVOICE_IMPORT_SCHEMA = vol.Schema({
@@ -112,6 +120,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             raise ValueError("Voce di Bolletta Luce Italia non trovata")
         await target.async_archive_current(call.data.get("month"))
 
+    async def _set_month_estimate(call: ServiceCall) -> None:
+        target = hass.data[DOMAIN].get(call.data["entry_id"])
+        if target is None:
+            raise ValueError("Voce di Bolletta Luce Italia non trovata")
+        await target.async_set_month_estimate(
+            call.data["month"],
+            call.data["estimate"],
+            call.data.get("energy_total"),
+        )
+
     if not hass.services.has_service(DOMAIN, SERVICE_RECORD_INVOICE):
         hass.services.async_register(
             DOMAIN,
@@ -131,6 +149,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _archive_month,
             schema=SERVICE_ARCHIVE_SCHEMA,
         )
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SET_MONTH_ESTIMATE,
+            _set_month_estimate,
+            schema=SERVICE_SET_ESTIMATE_SCHEMA,
+        )
 
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -146,6 +170,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.services.async_remove(DOMAIN, SERVICE_RECORD_INVOICE)
             hass.services.async_remove(DOMAIN, SERVICE_IMPORT_HISTORY)
             hass.services.async_remove(DOMAIN, SERVICE_ARCHIVE_MONTH)
+            hass.services.async_remove(DOMAIN, SERVICE_SET_MONTH_ESTIMATE)
     return unloaded
 
 

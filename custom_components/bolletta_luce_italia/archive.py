@@ -8,6 +8,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import STORAGE_KEY, STORAGE_VERSION
+from .period import trim_snapshot
+
+# Lo snapshot del mese in corso viene scritto al massimo ogni 15 minuti,
+# per non consumare la scheda SD con una scrittura a ogni aggiornamento.
+_ACTIVE_SAVE_DELAY = 900
 
 _ENERGY_KEYS = {"energy", "energy_f1", "energy_f2", "energy_f3"}
 _MONEY_KEYS = {
@@ -42,8 +47,25 @@ class BillArchive:
         await self._store.async_save(self.data)
 
     async def async_archive(self, month: str, snapshot: dict[str, Any]) -> None:
-        self.data.setdefault("months", {})[month] = snapshot
+        self.data.setdefault("months", {})[month] = trim_snapshot(snapshot)
         await self.async_save()
+
+    def active(self) -> tuple[str | None, dict[str, Any] | None]:
+        """Ultimo snapshot salvato del mese in corso."""
+        active = self.data.get("active") or {}
+        return active.get("month"), active.get("snapshot")
+
+    def set_active(self, month: str, snapshot: dict[str, Any]) -> None:
+        """Memorizza lo snapshot corrente con scrittura ritardata."""
+        self.data["active"] = {"month": month, "snapshot": trim_snapshot(snapshot)}
+        self._store.async_delay_save(lambda: self.data, _ACTIVE_SAVE_DELAY)
+
+    def archived_months(self) -> dict[str, dict[str, Any]]:
+        """Stime mensili chiuse, ridotte alle voci utili."""
+        return {
+            month: trim_snapshot(snapshot)
+            for month, snapshot in self.data.get("months", {}).items()
+        }
 
     def _set_invoice(
         self,

@@ -175,6 +175,42 @@ def _taxes_schema(values: dict[str, Any]) -> vol.Schema:
             CONF_RAI_INSTALLMENTS,
             default=_value(values, CONF_RAI_INSTALLMENTS),
         ): _number(1, 12, 1),
+        vol.Required(
+            CONF_BILLING_PERIOD,
+            default=_value(values, CONF_BILLING_PERIOD),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(
+                        value=BILLING_MONTHLY,
+                        label="Mensile",
+                    ),
+                    selector.SelectOptionDict(
+                        value=BILLING_BIMONTHLY,
+                        label="Bimestrale",
+                    ),
+                ],
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        ),
+        vol.Required(
+            CONF_BIMESTER_START,
+            default=_value(values, CONF_BIMESTER_START),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(
+                        value=BIMESTER_ODD,
+                        label="Gen–feb, mar–apr, mag–giu, lug–ago, set–ott, nov–dic",
+                    ),
+                    selector.SelectOptionDict(
+                        value=BIMESTER_EVEN,
+                        label="Dic–gen, feb–mar, apr–mag, giu–lug, ago–set, ott–nov",
+                    ),
+                ],
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        ),
     }
     fields.update(_back_field())
     return vol.Schema(fields)

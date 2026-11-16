@@ -36,9 +36,18 @@ CONF_EV_ENABLED = "ev_enabled"
 CONF_EV_GRID = "ev_grid"
 CONF_EV_PV = "ev_pv"
 CONF_EV_INCLUDE_FIXED = "ev_include_fixed"
+CONF_BILLING_PERIOD = "billing_period"
+CONF_BIMESTER_START = "bimester_start"
 
 TARIFF_INDEXED = "indexed"
 TARIFF_FIXED = "fixed"
+
+BILLING_MONTHLY = "monthly"
+BILLING_BIMONTHLY = "bimonthly"
+BIMESTER_ODD = "odd"
+BIMESTER_EVEN = "even"
+
+INTEGRATION_VERSION = "0.4.0"
 
 DEFAULTS = {
     CONF_NAME: "Bolletta luce",
@@ -64,6 +73,8 @@ DEFAULTS = {
     CONF_RAI_INSTALLMENTS: 10,
     CONF_EV_ENABLED: False,
     CONF_EV_INCLUDE_FIXED: False,
+    CONF_BILLING_PERIOD: BILLING_MONTHLY,
+    CONF_BIMESTER_START: BIMESTER_ODD,
 }
 
 STORAGE_VERSION = 1
@@ -71,3 +82,4 @@ STORAGE_KEY = DOMAIN + ".{entry_id}"
 SERVICE_RECORD_INVOICE = "registra_bolletta"
 SERVICE_IMPORT_HISTORY = "importa_storico"
 SERVICE_ARCHIVE_MONTH = "archivia_mese"
+SERVICE_SET_MONTH_ESTIMATE = "registra_stima_mese"

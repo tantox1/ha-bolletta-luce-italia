@@ -4,6 +4,24 @@ Tutte le modifiche rilevanti di Bolletta Luce Italia sono documentate in questo 
 
 Il progetto usa il versionamento semantico e i tag nel formato `vMAJOR.MINOR.PATCH`.
 
+## [0.4.0] - 2026-11-16
+
+### Aggiunto
+
+- Periodicità della bolletta configurabile, mensile o bimestrale, con scelta della sequenza dei bimestri (gen–feb… oppure dic–gen…).
+- Sensori `Stima bolletta del periodo` ed `Energia fatturabile del periodo`, che sommano il mese in corso ai mesi già chiusi del bimestre, con il dettaglio delle voci come attributi.
+- Sensori `Proiezione bolletta del mese` e `Proiezione bolletta del periodo`: la parte variabile viene estrapolata al tempo trascorso, quote fisse e canone RAI no.
+- Sensore `Storico periodi` con il riepilogo per periodo di stime e bollette reali e lo storico delle stime mensili, pensato per i grafici della dashboard.
+- Servizio `bolletta_luce_italia.registra_stima_mese` per completare un bimestre con la stima di un mese non archiviato.
+
+### Modificato
+
+- `Scostamento ultima bolletta` confronta la bolletta con la somma delle stime di tutti i mesi che copre, ricavati da `period_start`/`period_end` oppure dal periodo configurato; gli attributi indicano i mesi usati e quelli mancanti.
+- Lo snapshot del mese in corso viene salvato nello storage (al massimo ogni 15 minuti), così un riavvio a cavallo di fine mese non perde la stima del mese chiuso.
+- L'archivio mensile conserva soltanto le voci di calcolo, senza copiare lo storico delle bollette.
+- Gli archivi esposti come attributi sono esclusi dal recorder.
+- Il coordinatore riceve esplicitamente la voce di configurazione e la versione del dispositivo segue quella dell'integrazione.
+
 ## [0.3.0] - 2026-11-10
 
 ### Aggiunto

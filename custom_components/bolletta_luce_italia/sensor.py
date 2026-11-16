@@ -13,17 +13,43 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_NAME, DOMAIN
+from .const import CONF_NAME, DOMAIN, INTEGRATION_VERSION
 from .coordinator import BillCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
 class BillSensorDescription(SensorEntityDescription):
     attribute_keys: tuple[str, ...] = ()
+    # Attributi voluminosi esclusi dal recorder: restano leggibili dalle card.
+    unrecorded_keys: frozenset[str] = frozenset()
 
 
 ENERGY = {"native_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY, "state_class": SensorStateClass.MEASUREMENT}
 MONEY = {"native_unit_of_measurement": CURRENCY_EURO, "device_class": SensorDeviceClass.MONETARY, "state_class": SensorStateClass.MEASUREMENT}
+PERIOD_INFO = (
+    "billing_period",
+    "period_label",
+    "period_months",
+    "period_start",
+    "period_end",
+    "month_in_period",
+    "months_in_period",
+    "period_complete",
+    "period_missing_months",
+)
+PERIOD_BREAKDOWN = (
+    "previous_months_estimate",
+    "period_energy_f1",
+    "period_energy_f2",
+    "period_energy_f3",
+    "period_matter",
+    "period_cdispd_cost",
+    "period_network_cost",
+    "period_fixed_cost",
+    "period_excise",
+    "period_vat",
+    "period_rai",
+)
 PRICE = {"native_unit_of_measurement": "€/kWh", "state_class": SensorStateClass.MEASUREMENT}
 
 SENSORS: tuple[BillSensorDescription, ...] = (
@@ -55,14 +81,24 @@ SENSORS: tuple[BillSensorDescription, ...] = (
     BillSensorDescription(key="latest_invoice_rai", name="Ultima bolletta: canone RAI", **MONEY),
     BillSensorDescription(key="latest_bonus", name="Ultima bolletta: bonus e sconti", **MONEY),
     BillSensorDescription(key="latest_amount_due", name="Ultima bolletta: totale da pagare", **MONEY),
-    BillSensorDescription(key="deviation", name="Scostamento ultima bolletta", **MONEY),
-    BillSensorDescription(key="invoice_count", name="Bollette archiviate", attribute_keys=("invoice_archive",)),
+    BillSensorDescription(key="deviation", name="Scostamento ultima bolletta", attribute_keys=("latest_invoice_month", "deviation_months", "deviation_missing_months", "deviation_estimate"), **MONEY),
+    BillSensorDescription(key="invoice_count", name="Bollette archiviate", attribute_keys=("invoice_archive",), unrecorded_keys=frozenset({"invoice_archive"})),
+    BillSensorDescription(key="period_estimate", name="Stima bolletta del periodo", attribute_keys=PERIOD_INFO + PERIOD_BREAKDOWN, **MONEY),
+    BillSensorDescription(key="period_energy_total", name="Energia fatturabile del periodo", attribute_keys=PERIOD_INFO, **ENERGY),
+    BillSensorDescription(key="month_projection", name="Proiezione bolletta del mese", attribute_keys=("month", "month_elapsed_percent"), **MONEY),
+    BillSensorDescription(key="period_projection", name="Proiezione bolletta del periodo", attribute_keys=PERIOD_INFO + ("month_elapsed_percent",), **MONEY),
+    BillSensorDescription(key="period_archive_count", name="Storico periodi", attribute_keys=("billing_period", "period_archive", "monthly_archive"), unrecorded_keys=frozenset({"period_archive", "monthly_archive"})),
 )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator: BillCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(BillSensor(coordinator, entry, description) for description in SENSORS)
+    async_add_entities(
+        (BillHistorySensor if description.unrecorded_keys else BillSensor)(
+            coordinator, entry, description
+        )
+        for description in SENSORS
+    )
 
 
 class BillSensor(CoordinatorEntity[BillCoordinator], SensorEntity):
@@ -80,7 +116,7 @@ class BillSensor(CoordinatorEntity[BillCoordinator], SensorEntity):
             name=coordinator.config.get(CONF_NAME, "Bolletta luce"),
             manufacturer="Bolletta Luce Italia",
             model="Calcolatore bolletta elettrica",
-            sw_version="0.1.0",
+            sw_version=INTEGRATION_VERSION,
         )
 
     @property
@@ -95,3 +131,11 @@ class BillSensor(CoordinatorEntity[BillCoordinator], SensorEntity):
             if key in self.coordinator.data
         }
         return attrs or None
+
+
+class BillHistorySensor(BillSensor):
+    """Sensore con archivi voluminosi esclusi dal recorder."""
+
+    _unrecorded_attributes = frozenset(
+        {"invoice_archive", "period_archive", "monthly_archive"}
+    )

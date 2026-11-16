@@ -21,7 +21,8 @@ La configurazione guidata è suddivisa in cinque pagine e l'integrazione può es
 - ripartizione opzionale della ricarica auto fra rete e fotovoltaico;
 - attribuzione opzionale e proporzionale delle quote fisse all'auto;
 - configurazione guidata in cinque pagine con contatore e ritorno al passaggio precedente;
-- modifica di tutte le opzioni senza riavviare Home Assistant.
+- modifica di tutte le opzioni senza riavviare Home Assistant;
+- bolletta mensile o bimestrale, con stima, proiezione e scostamento calcolati sull'intero periodo.
 
 ## Sensori da conservare
 
@@ -110,6 +111,37 @@ Il servizio bolletta_luce_italia.archivia_mese salva manualmente la fotografia c
 Per importare più mesi insieme è disponibile il servizio `bolletta_luce_italia.importa_storico`. Ogni voce richiede mese, consumi F1/F2/F3 e totale della bolletta senza RAI. Sono facoltativi periodo, RAI, bonus, totale da pagare, materia energia, trasporto, oneri, accise e IVA.
 
 L'importazione è idempotente: una voce già presente con lo stesso mese viene aggiornata e non duplicata. Per il confronto con la stima viene usato il totale della bolletta più il RAI, senza applicare bonus o crediti; il totale effettivamente pagato rimane disponibile separatamente.
+
+## Bolletta bimestrale
+
+Nella pagina 4 della configurazione scegli la periodicità **Bimestrale** e la sequenza dei bimestri riportata in bolletta:
+
+- gen–feb, mar–apr, mag–giu, lug–ago, set–ott, nov–dic;
+- dic–gen, feb–mar, apr–mag, giu–lug, ago–set, ott–nov.
+
+I sensori del mese continuano a funzionare come prima. In più:
+
+- `Stima bolletta del periodo`: mese in corso più i mesi già chiusi del bimestre; gli attributi `period_*` riportano il dettaglio delle voci;
+- `Energia fatturabile del periodo`;
+- `Proiezione bolletta del periodo`: stima di quanto arriverà in bolletta a fine bimestre, mantenendo il ritmo di consumo del mese corrente;
+- `Storico periodi`: elenco per bimestre di stima, bolletta reale e scostamento, utile per i grafici.
+
+Le bollette bimestrali si importano con `importa_storico` come una sola voce: `month` può essere uno qualsiasi dei due mesi e i consumi F1/F2/F3 sono quelli dell'intero bimestre. Se indichi `period_start` e `period_end`, lo scostamento usa esattamente i mesi compresi.
+
+    service: bolletta_luce_italia.importa_storico
+    data:
+      entry_id: <identificativo>
+      invoices:
+        - month: "2026-10"
+          period_start: "2026-09-01"
+          period_end: "2026-10-31"
+          energy_f1: 0
+          energy_f2: 0
+          energy_f3: 0
+          energy_bill_total: 0
+          rai: 0
+
+Se un mese del bimestre non è stato archiviato (per esempio perché l'integrazione è stata installata dopo), si può inserire la sua stima con `bolletta_luce_italia.registra_stima_mese` (`month`, `estimate`, facoltativo `energy_total`). Finché manca, la stima del periodo comprende solo i mesi disponibili e l'attributo `period_complete` vale `false`.
 
 ## Opzioni e applicazione immediata
 
